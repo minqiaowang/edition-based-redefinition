@@ -6,11 +6,6 @@
 
 -    Learn how to use Oracle Edition-Based Redefinition to enables online application upgrade with uninterrupted availability of the application.
 
-### Lab Prerequisites
-
-This lab assumes you have completed the following labs:
-* Lab: Install Sample Schemas
-
 ### Scenario
 
 The standard sample schema HR has an EMPLOYEES table. We’ll pretend that this table has historically been part of a U.S. based company’s application, so the phone numbers are stored in a format that a U.S. based company would recognize easily. U.S. phone numbers are stored with just an area code and then the seven-digit number, such as 650.507.9876. International numbers are stored in a format that has the U.S. “escape” code (for dialing an international number), followed by the country code and then the phone number, for example:  011.44.1644.429262.
@@ -51,7 +46,27 @@ Any one of these steps could take a significant amount of time. Our goal is to m
    </copy>
    ```
 
-3. Create a demo user and grant to sufficient privilege.
+3. Install HR sample schema. Use the values from this example:
+
+   ```
+   SQL> @?/demo/schema/human_resources/hr_main.sql
+   
+   specify password for HR as parameter 1:
+   Enter value for 1: hr
+   
+   specify default tablespeace for HR as parameter 2:
+   Enter value for 2: USERS
+   
+   specify temporary tablespace for HR as parameter 3:
+   Enter value for 3: TEMP
+   
+   specify log path as parameter 4:
+   Enter value for 4: $ORACLE_HOME/demo/schema/log/
+   ```
+
+   
+
+4. Create a demo user and grant to sufficient privilege.
 
    ```
    <copy>
@@ -64,7 +79,7 @@ Any one of these steps could take a significant amount of time. Our goal is to m
 
    
 
-4. Connect with the lab user: 
+5. Connect with the lab user: 
 
    ```
    <copy>
@@ -216,14 +231,11 @@ The sequence was created to start with a value higher than any existing value in
    
    SQL> commit;
    
-   
-   
-
    Commit complete.
-
-   SQL>
-   ```
    
+SQL>
+   ```
+
    Now, the version 1.0 application is ready.
 
 
@@ -237,7 +249,9 @@ The sequence was created to start with a value higher than any existing value in
     create edition version2 as child of ora$base;
     alter user demo enable editions;
     grant use on edition version2 to demo;
-    connect demo/demo@orclpdb
+    grant create view to demo;
+    grant create job to demo;
+    connect demo/demo@orclpdb;
    ```
    
     
@@ -264,6 +278,7 @@ The sequence was created to start with a value higher than any existing value in
 3. Once that is done, we are online again. Furthermore, the existing application will be 100 percent unaffected by this; the editioning view we put in place looks and behaves just like a table. The existing application runs as before.
 
     ```
+    SQL> set serveroutput on;
     SQL> exec emp_pkg.show( '%C%' );
     Anthony Cabrio				650.509.4876	    ACABRIO
     Gerald Cambrault			011.44.1344.619268  GCAMBRAU
@@ -302,11 +317,23 @@ After redefining the database objects that comprise the application that you are
 1. First we will switch to the new edition.
 
     ````
-    <copy>
-    SELECT SYS_CONTEXT('userenv','current_edition_name') sc FROM DUAL;
-    alter session set edition = version2;
-    SELECT SYS_CONTEXT('userenv','current_edition_name') sc FROM DUAL;
-    </copy>
+    SQL> SELECT SYS_CONTEXT('userenv','current_edition_name') sc FROM DUAL;
+    
+    SC
+    --------------------------------------------------------------------------------
+    ORA$BASE
+    
+    SQL> alter session set edition = version2;
+    
+    Session altered.
+    
+    SQL> SELECT SYS_CONTEXT('userenv','current_edition_name') sc FROM DUAL;
+    
+    SC
+    --------------------------------------------------------------------------------
+    VERSION2
+    
+    SQL> 
     ````
     
 2. Then we create a forward cross-edition trigger. We created this in our new edition, the new application schema (VERSION2). Our goal is to not disturb the existing application, so we’ll do our editioning work in the new edition only.
@@ -418,7 +445,7 @@ After redefining the database objects that comprise the application that you are
     SQL> 
     ```
 
-    Applying the transform, invoke either the `DBMS_SQL`.`PARSE` procedure or the subprograms in the `DBMS_PARALLEL_EXECUTE` package. The latter is recommended if you have a lot of data. The subprograms enable you to incrementally update the data in a large table in parallel, in two high-level steps:
+    When you applying the transform, invoke either the `DBMS_SQL`.`PARSE` procedure or the subprograms in the `DBMS_PARALLEL_EXECUTE` package. The latter is recommended if you have a lot of data. The subprograms enable you to incrementally update the data in a large table in parallel, in two high-level steps:
 
     - Group sets of rows in the table into smaller chunks.
 
@@ -431,7 +458,7 @@ After redefining the database objects that comprise the application that you are
 
      
 
-    In the next step, we will perform the above mass the `DBMS_PARALLEL_EXECUTE` package. So, We rollback the employees_rt table to the pre-upgrade state.
+    In the next step, we will perform the above mass task using the `DBMS_PARALLEL_EXECUTE` package. So, We rollback the employees_rt table to the pre-upgrade state.
 
     ```
     SQL> rollback;
@@ -472,7 +499,21 @@ After redefining the database objects that comprise the application that you are
 
     
 
-8. Check the blocks of the table:
+8. Make sure your current edition is version2:
+
+    ```
+    SQL> SELECT SYS_CONTEXT('userenv','current_edition_name') sc FROM DUAL;
+    
+    SC
+    --------------------------------------------------------------------------------
+    VERSION2
+    
+    SQL> 
+    ```
+
+    
+
+9. Check the blocks of the table:
 
     ```
     SQL> select count(*), count(distinct dbms_rowid.rowid_block_number(rowid)) cnt_blk from employees_rt;
@@ -486,7 +527,7 @@ After redefining the database objects that comprise the application that you are
 
     
 
-9. Our existing table is about 1111 blocks, and we’d like to update about 10 percent of it at a time. (On a larger table, you’d likely use a much smaller percentage to avoid locking too much of the table at a time.) So we’ll break it up into chunks that are 100 blocks or thereabouts in size:
+10. Our existing table is about 1111 blocks, and we’d like to update about 10 percent of it at a time. (On a larger table, you’d likely use a much smaller percentage to avoid locking too much of the table at a time.) So we’ll break it up into chunks that are 100 blocks or thereabouts in size:
 
     ```
     <copy>
@@ -505,7 +546,7 @@ After redefining the database objects that comprise the application that you are
 
     
 
-10. Looking at chunks in USER_PARALLEL_EXECUTE_CHUNKS:
+11. Looking at chunks in USER_PARALLEL_EXECUTE_CHUNKS:
 
     ```
     SQL> select chunk_id, status, start_rowid, end_rowid
@@ -537,7 +578,7 @@ After redefining the database objects that comprise the application that you are
 
     
 
-11. Now we are ready to perform our update.
+12. Now we are ready to perform our update.
 
      ```
      <copy>
@@ -558,7 +599,7 @@ After redefining the database objects that comprise the application that you are
 
      When running our task, using two threads of execution (parallel_level=>2) just to demonstrate that you can chunk something up into many more chunks than you ultimately run concurrently. It's locking only a small subset of the table at a time. This enabled the existing application to function normally while we did our mass move of data at the same time.
 
-12. Check the result:
+13. Check the result:
 
      ```
      SQL> select count(*) from employees_rt where country_code is not null;
@@ -576,7 +617,7 @@ After redefining the database objects that comprise the application that you are
 
      
 
-13. After that operation is done and we are satisfied with the results, we can drop the task we created:
+14. After that operation is done and we are satisfied with the results, we can drop the task we created:
 
      ```
      <copy>
@@ -623,7 +664,7 @@ After redefining the database objects that comprise the application that you are
 
    
 
-3. Now we replace the view and package:
+3. Now we replace the view and package to the new version:
 
    ```
    <copy>
@@ -805,6 +846,7 @@ After redefining the database objects that comprise the application that you are
 8. Check the result:
 
    ```
+   SQL> set serveroutput on;
    SQL> exec emp_pkg.show('Hanks')
    Tom Hanks				+44  703.123.4567	 THANKS
    
@@ -914,7 +956,7 @@ After redefining the database objects that comprise the application that you are
    --------------------------------------------------------------------------------
    VERSION2
    
-   SQL> set serveroutpu on
+   SQL> set serveroutput on
    SQL> exec emp_pkg.show( 'Hanks' )
    Tom Hanks				+44  703.123.4567	 THANKS
    
