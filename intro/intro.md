@@ -12,7 +12,7 @@
 
 ## About the Labs Environment
 
-In this workshop, we will using the Oracle Database version 19c which setup on Oracle Cloud Infrastructure. The database has a default pdb names **orclpdb**. If you have your own on-premise database. You can skip the Lab1, Lab2, and Lab3. 
+In this workshop, we will using the Oracle Database version 19c which setup on Oracle Cloud Infrastructure. The database has a default pdb named **orclpdb**. If you have your own on-premise database. You can skip the Lab1, Lab2, and Lab3. 
 
 ## More Information on EBR
 

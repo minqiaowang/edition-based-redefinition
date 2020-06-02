@@ -4,13 +4,13 @@
 
 ### Objectives
 
--    Learn how to use Oracle Edition-Based Redefinition to enables online application upgrade with uninterrupted availability of the application.
+-    Learn how to use Oracle Database Edition-Based Redefinition to enable online application upgrade with uninterrupted availability of the application.
 
 ### Scenario
 
-The standard sample schema HR has an EMPLOYEES table. We’ll pretend that this table has historically been part of a U.S. based company’s application, so the phone numbers are stored in a format that a U.S. based company would recognize easily. U.S. phone numbers are stored with just an area code and then the seven-digit number, such as 650.507.9876. International numbers are stored in a format that has the U.S. “escape” code (for dialing an international number), followed by the country code and then the phone number, for example:  011.44.1644.429262.
+The standard sample schema HR has an EMPLOYEES table. We’ll pretend that this table has historically been part of an U.S. based company’s application, so the phone numbers are stored in a format that a U.S. based company would recognize easily. U.S. phone numbers are stored with just an area code and then the seven-digit number, such as 650.507.9876. International numbers are stored in a format that has the U.S. “escape” code (for dialing an international number), followed by the country code and then the phone number, for example:  011.44.1644.429262.
 
-Now the company grown to be a global company. It's need change how it stores phone numbers in order to adhere to the standards . It will now store and display all numbers in two fields: a country code field and a phone number field. So for example, using two sample phone numbers, the before and after storage will be as follows:
+Now the company grown to be a global company. It's need change how it stores phone numbers in order to adhere to the standards . It will store and display all phone numbers in two fields: a country code field and a phone number field. For example, using two sample phone numbers, the before and after storage will be as follows:
 
 | **Before**         | **After**    |              |
 | ------------------ | ------------ | ------------ |
@@ -20,12 +20,12 @@ Now the company grown to be a global company. It's need change how it stores pho
 
 Now the change involves a couple of steps. We have to
 
-- Modify the schema so the EMPLOYEE table has two new columns: COUNTRY_CODE and PHONE#
-- Mass-move the existing data from PHONE_NUMBER to COUNTRY_CODE and PHONE#
-- Modify the schema so the EMPLOYEE table doesn’t have a PHONE_NUMBER column anymore
-- Replace the application code in the database that is reliant on the PHONE_NUMBER column
+- Modify the schema so the EMPLOYEE table has two new columns: `COUNTRY_CODE` and `PHONE#`
+- Mass-move the existing data from `PHONE_NUMBER` to `COUNTRY_CODE` and `PHONE#`
+- Modify the schema so the EMPLOYEE table doesn’t have a `PHONE_NUMBER` column anymore
+- Replace the application code in the database that is reliant on the `PHONE_NUMBER` column
 
-Any one of these steps could take a significant amount of time. Our goal is to minimize any downtime incurred by this application upgrade, so we’d like to do all these steps while version 1.0 of the application is up and running and stage all the changes in the database for version 2.0 of the application. And we’d like to online switch over to the new application.
+Any one of these steps could take a significant amount of time. Our goal is to minimize any downtime incurred by this application upgrade, so we’d like to do all these steps while version 1.0 of the application is up and running and stage all the changes in the database for version 2.0 of the application. Then we’d like to online switch over to the new application.
 
 ## Step 1: Prepare the Version 1.0 application
 
@@ -46,7 +46,7 @@ Any one of these steps could take a significant amount of time. Our goal is to m
    </copy>
    ```
 
-3. Install HR sample schema. Use the values from this example:
+3. Install HR sample schema. Use the values as following:
 
    ```
    SQL> @?/demo/schema/human_resources/hr_main.sql
@@ -66,7 +66,7 @@ Any one of these steps could take a significant amount of time. Our goal is to m
 
    
 
-4. Create a demo user and grant to sufficient privilege.
+4. Create a lab user and grant to sufficient privileges.
 
    ```
    <copy>
@@ -89,7 +89,7 @@ Any one of these steps could take a significant amount of time. Our goal is to m
 
   
 
-5. Let’s start with the version 1.0 application setup:
+5. Let’s start with the version 1.0 application setup, first we will create the sample table and sequence.
 
    ```
    <copy>
@@ -100,7 +100,7 @@ Any one of these steps could take a significant amount of time. Our goal is to m
 
 The sequence was created to start with a value higher than any existing value in the EMPLOYEES table for this demonstration.
 
-6. The version 1.0 application code will perform two functions: show a report of EMPLOYEES with their phone numbers and e-mails when given a search string and hire a new employee, modifying the existing table. 
+6. The version 1.0 application code will perform two functions: show a report of EMPLOYEES with their phone numbers and e-mails when given a search string and hire a new employee, adding the information of the new employee to the existing table. 
 
    ```
    <copy>
@@ -185,7 +185,7 @@ The sequence was created to start with a value higher than any existing value in
    /</copy>
    ```
 
-7. Now we can review how this application works in SQL*Plus
+7. Now we can review how this application works in sqlplus.
 
    ```
    SQL> set serveroutput on 
@@ -233,7 +233,7 @@ The sequence was created to start with a value higher than any existing value in
    
    Commit complete.
    
-SQL>
+   SQL>
    ```
 
    Now, the version 1.0 application is ready.
@@ -242,7 +242,7 @@ SQL>
 
 ## Step 2: Preparing the Application to Use Editioning Views
 
-1. Connect as sysdba user, create a new edition named **version2**. Permit the DEMO account to use editions, and grant the DEMO account to use the VERSION2 edition.
+1. Connect as sysdba user, create a new edition named **version2**. Permit the DEMO account to use editions, and grant the DEMO account to use the version2 edition.
 
    ```
     connect sys/Ora_DB4U@orclpdb as sysdba;
@@ -256,9 +256,9 @@ SQL>
    
     
    
-2. Let’s prepare the schema to allow for an online application upgrade that includes physical schema updates. Remember, this involves one outage to put the editioning views in place. In this case, creating the editioning view involves the following:
+2. Let’s prepare the schema to allow for an online application upgrade that includes physical schema updates. Remember, this involves one outage to put the editioning views in place. In this case, we will rename the table and creating the editioning view name with the original name of its base table's. The editioning view maps physical column names (used by the base table) to logical column names (used by the application). 
 
-    ```
+   ```
     <copy>
     alter table employees rename to employees_rt;
     create editioning view employees
@@ -271,9 +271,10 @@ SQL>
         DEPARTMENT_ID
       from employees_rt;
     </copy>
-    ```
+   ```
 
-    
+
+​    
 
 3. Once that is done, we are online again. Furthermore, the existing application will be 100 percent unaffected by this; the editioning view we put in place looks and behaves just like a table. The existing application runs as before.
 
@@ -314,7 +315,7 @@ SQL>
 ## Step 3: Transforming Data from Pre- to Post-Upgrade Representation
 After redefining the database objects that comprise the application that you are upgrading (in the new edition), you must transform the application data from its pre-upgrade representation (in the old edition) to its post-upgrade representation (in the new edition). The rules for this transformation are called **transforms**, and they are defined by forward crossedition triggers.
 
-1. First we will switch to the new edition.
+1. First let's switch to the new edition version2.
 
     ````
     SQL> SELECT SYS_CONTEXT('userenv','current_edition_name') sc FROM DUAL;
@@ -336,7 +337,9 @@ After redefining the database objects that comprise the application that you are
     SQL> 
     ````
     
-2. Then we create a forward cross-edition trigger. We created this in our new edition, the new application schema (VERSION2). Our goal is to not disturb the existing application, so we’ll do our editioning work in the new edition only.
+    In the edition version2, all the editioned objects are inherited from the existing version in the ORA$BASE edition.
+    
+2. Then we create a forward cross-edition trigger. We created this in our new edition verion2. Our goal is to not disturb the existing application, so we’ll do our editioning work in the new edition only.
 
     ````
     <copy>
@@ -363,7 +366,7 @@ After redefining the database objects that comprise the application that you are
     /
     </copy>
     ````
-    
+
 3. Enable the forward cross-edition trigger if there is no problem.
 
     ````
@@ -445,11 +448,11 @@ After redefining the database objects that comprise the application that you are
     SQL> 
     ```
 
-    When you applying the transform, invoke either the `DBMS_SQL`.`PARSE` procedure or the subprograms in the `DBMS_PARALLEL_EXECUTE` package. The latter is recommended if you have a lot of data. The subprograms enable you to incrementally update the data in a large table in parallel, in two high-level steps:
+    When you applying the transform, you can invoke either the `DBMS_SQL`.`PARSE` procedure or the subprograms in the `DBMS_PARALLEL_EXECUTE` package. The latter is recommended if you have a lot of data. The subprograms enable you to incrementally update the data in a large table in parallel, in two high-level steps:
 
     - Group sets of rows in the table into smaller chunks.
 
-    - Apply the desired `UPDATE` statement to the chunks in parallel, committing each time you have finished processing a chunk.
+    - Apply the desired UPDATE statement to the chunks in parallel, committing each time you have finished processing a chunk.
 
     The advantages are:
 
@@ -458,7 +461,7 @@ After redefining the database objects that comprise the application that you are
 
      
 
-    In the next step, we will perform the above mass task using the `DBMS_PARALLEL_EXECUTE` package. So, We rollback the employees_rt table to the pre-upgrade state.
+    In the next step, we will perform the above mass task using the `DBMS_PARALLEL_EXECUTE` package. So, We rollback the `employees_rt` table to the pre-upgrade state.
 
     ```
     SQL> rollback;
@@ -469,7 +472,7 @@ After redefining the database objects that comprise the application that you are
 
     
 
-7. We’ll have to (for purposes of demonstration) scale up our EMPLOYEES_RT table, because it is very small right now. First we’ll make it 1000 times larger.
+7. We’ll have to (for purposes of demonstration) scale up our `EMPLOYEES_RT` table, because it is very small right now. First we’ll make it 1000 times larger.
 
     ```
     SQL> insert into employees
@@ -529,22 +532,22 @@ After redefining the database objects that comprise the application that you are
 
 10. Our existing table is about 1111 blocks, and we’d like to update about 10 percent of it at a time. (On a larger table, you’d likely use a much smaller percentage to avoid locking too much of the table at a time.) So we’ll break it up into chunks that are 100 blocks or thereabouts in size:
 
-    ```
-    <copy>
-    begin
-        dbms_parallel_execute.create_task('update employees_rt');
-        dbms_parallel_execute.create_chunks_by_rowid
-        ( task_name   => 'update employees_rt',
-          table_owner => user,
-          table_name  => 'EMPLOYEES_RT',
-          by_row      => false,
-          chunk_size  => 100);
-    end;
-    /
-    </copy>
-    ```
+   ```
+   <copy>
+   begin
+       dbms_parallel_execute.create_task('update employees_rt');
+       dbms_parallel_execute.create_chunks_by_rowid
+       ( task_name   => 'update employees_rt',
+         table_owner => user,
+         table_name  => 'EMPLOYEES_RT',
+         by_row      => false,
+         chunk_size  => 100);
+   end;
+   /
+   </copy>
+   ```
 
-    
+   
 
 11. Looking at chunks in USER_PARALLEL_EXECUTE_CHUNKS:
 
@@ -608,15 +611,11 @@ After redefining the database objects that comprise the application that you are
      ----------
          108216
      
-     SQL> commit;
-     
-     Commit complete.
-     
      SQL>
      ```
-
      
-
+     
+     
 14. After that operation is done and we are satisfied with the results, we can drop the task we created:
 
      ```
@@ -630,7 +629,7 @@ After redefining the database objects that comprise the application that you are
 
 
 
-## Step 4: Upgrade new application code
+## Step 4: Upgrade the new application code
 
 1. Make sure you are in the new edition:
 
@@ -664,7 +663,7 @@ After redefining the database objects that comprise the application that you are
 
    
 
-3. Now we replace the view and package to the new version:
+3. Now we replace the view and package to the new version. It's not effect the editioned objects in version1.
 
    ```
    <copy>
@@ -784,7 +783,7 @@ After redefining the database objects that comprise the application that you are
 
    
 
-5. The editions are installed but not quite ready to go yet. The code in ORA$BASE is all set, but the code in VERSION2 is not quite ready. What if we call the EMP_PKG.ADD routine in VERSION2? It will populate the COUNTRY_CODE and PHONE# column but not the PHONE_NUMBER legacy column! So we need to create a reverse crossedition trigger:
+5. The editions are installed but not quite ready to go yet. The code in pre-upgrade edition ORA$BASE is all set, but the code in VERSION2 is not quite ready. What if we call the EMP_PKG.ADD routine in VERSION2? It will populate the COUNTRY_CODE and PHONE# column but not the PHONE_NUMBER legacy column! So if you want the pre-upgrade and post-upgrade application coexist for sometimes, you need to create a reverse crossedition trigger:
 
    ```
    <copy>
@@ -930,7 +929,7 @@ After redefining the database objects that comprise the application that you are
 
 ## Step 5: Set the new edition to default 
 
-1. To make using the new edition the default.
+1. Once the application is upgraded, We can make using the new edition to default.
 
    ```
    SQL> connect sys/Ora_DB4U@orclpdb as sysdba
@@ -965,10 +964,10 @@ After redefining the database objects that comprise the application that you are
    SQL> 
    ```
 
-   Now all that remains is cleaning up. The cleanup takes place after everyone is finished using the `ORA$BASE` edition, after no existing sessions are using the old code. We can review which edition each session currently in the database is using, by querying `V$SESSION`, the `SESSION_EDITION_ID` column (which can be joined to the `*_OBJECTS` views by `SESSION_EDITION_ID` to `OBJECT_ID` to see the name of the session edition), and when none are using `ORA$BASE`, we know we can perform our cleanup. In this case, the cleanup consists of
+   Now all that remains is cleaning up. The cleanup takes place after everyone is finished using the `ORA$BASE` edition, after no existing sessions are using the old code, we can perform our cleanup. In this case, the cleanup consists of
 
    - Dropping the forward and reverse crossedition triggers
-   - Optionally, dropping or setting as unused the PHONE_NUMBER column
+   - Optionally, dropping or setting as unused the `PHONE_NUMBER` column
 
    And that is it. We are done with our online application upgrade!
 
@@ -979,5 +978,5 @@ After redefining the database objects that comprise the application that you are
 
 - Edition-based redefinition allows multiple versions of PL/SQL objects, views and synonyms in a single schema, which makes it possible to perform upgrades of database applications with zero down time.
 
-For more information, please see the Spatial Developer's Guide at [https://www.oracle.com/database/technologies/high-availability/ebr.html](https://www.oracle.com/database/technologies/high-availability/ebr.html)
+For more information, please see the EBR Guide at [https://www.oracle.com/database/technologies/high-availability/ebr.html](https://www.oracle.com/database/technologies/high-availability/ebr.html)
 
