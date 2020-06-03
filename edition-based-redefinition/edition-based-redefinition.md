@@ -128,7 +128,7 @@ The sequence was created to start with a value higher than any existing value in
 
    
 
-   The emp_pkg body for application version 1.0:
+   The `emp_pkg` body for application version 1.0:
 
    ```
    <copy>create or replace package body emp_pkg
@@ -313,7 +313,7 @@ The sequence was created to start with a value higher than any existing value in
     The addition of the columns is an online operation. So it's not interrupt the current application.
 
 ## Step 3: Transforming Data from Pre- to Post-Upgrade Representation
-After redefining the database objects that comprise the application that you are upgrading (in the new edition), you must transform the application data from its pre-upgrade representation (in the old edition) to its post-upgrade representation (in the new edition). The rules for this transformation are called **transforms**, and they are defined by forward crossedition triggers.
+Now we need migrating the data from the pre-upgrade edition to the new edition. To accomplish this, we will rely on a forward cross-edition trigger. The trigger we’ll use to make sure that when data is inserted or updated by the pre-upgrade edition, the changes are accurately reflected in the new editions. We’ll use this trigger not only to capture the changes made by the legacy application but also to do the mass move as well.
 
 1. First let's switch to the new edition version2.
 
@@ -549,7 +549,7 @@ After redefining the database objects that comprise the application that you are
 
    
 
-11. Looking at chunks in USER_PARALLEL_EXECUTE_CHUNKS:
+11. Looking at chunks in `USER_PARALLEL_EXECUTE_CHUNKS`:
 
     ```
     SQL> select chunk_id, status, start_rowid, end_rowid
@@ -600,7 +600,7 @@ After redefining the database objects that comprise the application that you are
      </copy>
      ```
 
-     When running our task, using two threads of execution (parallel_level=>2) just to demonstrate that you can chunk something up into many more chunks than you ultimately run concurrently. It's locking only a small subset of the table at a time. This enabled the existing application to function normally while we did our mass move of data at the same time.
+     When running our task, using two threads of execution `(parallel_level=>2)` just to demonstrate that you can chunk something up into many more chunks than you ultimately run concurrently. It's locking only a small subset of the table at a time. This enabled the existing application to function normally while we did our mass move of data at the same time.
 
 13. Check the result:
 
@@ -783,7 +783,7 @@ After redefining the database objects that comprise the application that you are
 
    
 
-5. The editions are installed but not quite ready to go yet. The code in pre-upgrade edition ORA$BASE is all set, but the code in VERSION2 is not quite ready. What if we call the EMP_PKG.ADD routine in VERSION2? It will populate the COUNTRY_CODE and PHONE# column but not the PHONE_NUMBER legacy column! So if you want the pre-upgrade and post-upgrade application coexist for sometimes, you need to create a reverse crossedition trigger:
+5. The editions are installed but not quite ready to go yet. The code in pre-upgrade edition `ORA$BASE` is all set, but the code in VERSION2 is not quite ready. What if we call the `EMP_PKG.ADD` routine in VERSION2? It will populate the `COUNTRY_CODE` and `PHONE#` column but not the `PHONE_NUMBER` legacy column! So if you want the pre-upgrade and post-upgrade application coexist for sometimes, you need to create a reverse crossedition trigger:
 
    ```
    <copy>
