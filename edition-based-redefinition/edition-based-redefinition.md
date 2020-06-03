@@ -530,7 +530,7 @@ After redefining the database objects that comprise the application that you are
 
     
 
-10. Our existing table is about 1111 blocks, and we’d like to update about 10 percent of it at a time. (On a larger table, you’d likely use a much smaller percentage to avoid locking too much of the table at a time.) So we’ll break it up into chunks that are 100 blocks or thereabouts in size:
+10. Our existing table is about 1111 blocks, and we’d like to update about 10 percent of it at a time. (On a larger table, you’d likely use a much smaller percentage to avoid locking too much of the table at a time.) So we’ll break it up that about 100 blocks in one chunk.
 
    ```
    <copy>
