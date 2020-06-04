@@ -256,7 +256,7 @@ The sequence was created to start with a value higher than any existing value in
    
     
    
-2. Let’s prepare the schema to allow for an online application upgrade that includes physical schema updates. Remember, this involves one outage to put the editioning views in place. In this case, we will rename the base table and creating the editioning view with the original name of its base table's. The editioning view maps physical column names (used by the base table) to logical column names (used by the application). 
+2. Let’s prepare the schema to allow for an online application upgrade that includes physical schema updates. Remember, this involves one outage to put the editioning views in place. In this case, we will rename the base table and creating the editioning view with the original name of its base table's. The editioning view maps physical column names (used by the base table) to logical column names (used by the application). When you application has based on the editioning view, you can skip this step during the next upgrade.
 
    ```
     <copy>
